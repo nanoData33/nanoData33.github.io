@@ -1,51 +1,110 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Asistente Clínico — Chat (Audio + Texto)</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Asistente Clínico – Audio y Texto</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+
 <style>
-  :root{
-    --azul:#2A4C9E; --cian:#009CDE; --violeta:#6A5ACD;
-    --gris:#F5F7FA; --blanco:#FFFFFF; --texto:#1E1E2F; --sombra:rgba(0,0,0,0.08);
+  :root {
+    --azul: #2A4C9E;
+    --cian: #009CDE;
+    --violeta: #6A5ACD;
+    --gris: #F5F7FA;
+    --blanco: #FFFFFF;
+    --texto: #1E1E2F;
+    --sombra: rgba(0,0,0,0.08);
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:'Poppins',sans-serif;background:var(--gris);display:flex;flex-direction:column;min-height:100vh}
-  header{background:var(--azul);color:#fff;padding:16px 20px;text-align:center;font-weight:600}
-  .wrap{width:95%;max-width:900px;margin:18px auto;display:flex;flex-direction:column;gap:12px}
-  .chat-box{background:var(--blanco);border-radius:12px;box-shadow:0 6px 18px var(--sombra);padding:16px}
-  .messages{height:420px;overflow:auto;background:#f9fbff;border-radius:8px;padding:12px;white-space:pre-wrap}
-  .msg{margin:8px 0;padding:10px 12px;border-radius:10px;display:block}
-  .msg.user{background:var(--cian);color:#fff;text-align:right}
-  .msg.bot{background:#ebedff;color:#111;text-align:left}
-  .controls{display:flex;gap:8px;margin-top:8px}
-  input[type="text"]{flex:1;padding:10px;border-radius:10px;border:1px solid #ccc;outline:none}
-  button{background:var(--azul);color:#fff;border:0;padding:10px 12px;border-radius:10px;cursor:pointer}
-  button:hover{background:var(--violeta)}
-  #recordBtn.recording{background:#b71c1c}
-  .grafico-btn{background:var(--violeta);margin-top:8px;padding:8px 12px;border-radius:8px;border:none;color:#fff;cursor:pointer}
-  table.md-table{border-collapse:collapse;width:100%;margin-top:8px}
-  table.md-table th, table.md-table td{border:1px solid #ddd;padding:6px 8px;text-align:left}
-  .meta-pre{background:#fff;border-radius:6px;padding:6px;margin:6px 0;font-size:0.9em;color:#333;white-space:pre-wrap}
-  footer{padding:10px;text-align:center;color:#666;font-size:.9rem}
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: var(--gris);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  header {
+    background: var(--azul);
+    color: white;
+    padding: 20px 40px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  main { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+  .chat-box {
+    width: 90%;
+    max-width: 800px;
+    background: var(--blanco);
+    border-radius: 12px;
+    box-shadow: 0 4px 10px var(--sombra);
+    padding: 20px;
+  }
+
+  .messages {
+    height: 300px;
+    overflow-y: auto;
+    background: #f9fbff;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: inset 0 0 4px var(--sombra);
+  }
+
+  .msg { margin-bottom: 10px; padding: 10px 14px; border-radius: 10px; }
+  .msg.user { background: var(--cian); color: white; text-align: right; }
+  .msg.bot { background: #ebedff; color: #222; }
+
+  .input-area { display: flex; align-items: center; gap: 10px; }
+  input {
+    flex: 1; padding: 10px 14px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    outline: none;
+  }
+
+  button {
+    background: var(--azul);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.25s;
+  }
+  button:hover { background: var(--violeta); }
+  #recordBtn.recording { background: #b71c1c; }
+
+  .grafico-btn {
+    background: var(--violeta);
+    margin-top: 10px;
+    display: inline-block;
+  }
+
+  footer { text-align: center; padding: 10px; background: #fff; font-size: 0.9em; color: #666; }
 </style>
 </head>
 <body>
-<header>🎙️ Asistente Clínico — Test Audio & Texto</header>
 
-<div class="wrap">
+<header>🎙️ Asistente Clínico Inteligente – Test Audio + Texto</header>
+
+<main>
   <div class="chat-box">
-    <div id="messages" class="messages" aria-live="polite"></div>
+    <h2>Prueba de envío combinado a n8n</h2>
+    <div id="messages" class="messages"></div>
 
-    <div class="controls" style="margin-top:12px">
-      <input id="userInput" type="text" placeholder="Escribe tu mensaje o graba audio..." />
-      <button id="sendBtn" title="Enviar">Enviar</button>
-      <button id="recordBtn" title="Grabar (micro)"><i data-lucide="mic"></i></button>
+    <div class="input-area">
+      <input id="userInput" placeholder="Escribe tu mensaje o graba audio..." />
+      <button id="recordBtn" onclick="toggleRecording()"><i data-lucide='mic'></i></button>
+      <button onclick="sendText()"><i data-lucide='send'></i></button>
     </div>
   </div>
-</div>
+</main>
 
 <footer>© 2025 Asistente Clínico — Test Webhook Audio/Texto</footer>
 
@@ -53,140 +112,60 @@
 <script>
 lucide.createIcons();
 
-const WEBHOOK = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const GRAFICO_WEBHOOK = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
+// === CONFIG ===
+const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+const graficoWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
+const messagesDiv = document.getElementById("messages");
+const input = document.getElementById("userInput");
 
-const messagesDiv = document.getElementById('messages');
-const input = document.getElementById('userInput');
-const sendBtn = document.getElementById('sendBtn');
-const recordBtn = document.getElementById('recordBtn');
-
-let lastUserMessage = "";
-let mediaRecorder = null;
-let audioChunks = [];
 let recording = false;
+let mediaRecorder, audioChunks = [];
 
-sendBtn.addEventListener('click', () => sendText());
-input.addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
-recordBtn.addEventListener('click', toggleRecording);
-
-function appendMessage(kind, html) {
-  const d = document.createElement('div');
-  d.className = 'msg ' + (kind === 'user' ? 'user' : 'bot');
-  d.innerHTML = html;
-  messagesDiv.appendChild(d);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  return d;
-}
-
-async function fetchAndParse(url, options) {
-  const res = await fetch(url, options);
-  const raw = await res.text();
-  let parsed = null;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (e) {
-    parsed = null;
-  }
-  return { raw, parsed };
-}
-
+// === ENVÍO DE TEXTO ===
 async function sendText() {
   const text = input.value.trim();
   if (!text) return;
-  lastUserMessage = text;
-  appendMessage('user', escapeHtml(text));
-  input.value = '';
-  const loading = appendMessage('bot', '<em>Procesando...</em>');
+  appendMessage("user", text);
+  input.value = "";
+  appendMessage("bot", "<em>Procesando...</em>", true);
 
   try {
-    const { parsed } = await fetchAndParse(WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'text', content: text })
+    const res = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "text", content: text })
     });
 
-    loading.remove();
-    const data = parsed ?? { respuesta: 'Error: formato inválido', mostrar_boton_grafico: false };
+    const data = await res.json();
+    removeLoading();
 
-    // Mostrar solo el texto de respuesta
-    if (data.respuesta) {
-      const msgDiv = appendMessage('bot', renderRespuesta(data.respuesta));
+    // Muestra solo el contenido de "respuesta"
+    appendMessage("bot", data.respuesta);
 
-      if (data.mostrar_boton_grafico === true || data.mostrar_boton_grafico === 'true') {
-        const btn = document.createElement('button');
-        btn.className = 'grafico-btn';
-        btn.textContent = '📊 Generar gráfico';
-        btn.onclick = () => generarGrafico(data.respuesta, lastUserMessage, btn);
-        msgDiv.appendChild(btn);
-      }
-    } else {
-      appendMessage('bot', '<em>No se recibió respuesta válida.</em>');
+    // Si hay que mostrar botón de gráfico
+    if (data.mostrar_boton_grafico === true) {
+      const btn = document.createElement("button");
+      btn.textContent = "📊 Generar gráfico";
+      btn.className = "grafico-btn";
+      btn.onclick = () => generarGrafico(data.respuesta, text);
+      messagesDiv.appendChild(btn);
     }
 
   } catch (err) {
-    loading.remove();
-    appendMessage('bot', `⚠️ Error de conexión con el asistente.`);
+    removeLoading();
+    appendMessage("bot", "⚠️ Error de conexión con el asistente.");
     console.error(err);
   }
 }
 
-// Renderizar texto y tablas Markdown
-function renderRespuesta(text) {
-  // Buscar tabla markdown
-  const lines = text.split(/\r?\n/);
-  let tableStart = lines.findIndex(l => /^\s*\|/.test(l));
-  if (tableStart === -1) return escapeHtml(text);
-
-  const intro = lines.slice(0, tableStart).join('\n').trim();
-  const tableLines = lines.slice(tableStart).filter(l => /^\s*\|/.test(l));
-
-  const rows = tableLines.map(r => {
-    let clean = r.trim();
-    if (clean.startsWith('|')) clean = clean.slice(1);
-    if (clean.endsWith('|')) clean = clean.slice(0, -1);
-    return clean.split('|').map(c => c.trim());
-  });
-
-  if (rows.length < 2) return escapeHtml(text);
-
-  const header = rows[0];
-  if (rows[1].every(c => /^-+$/.test(c))) rows.splice(1, 1);
-
-  let html = '';
-  if (intro) html += `<div class="meta-pre">${escapeHtml(intro)}</div>`;
-  html += `<table class="md-table"><thead><tr>${header.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>`;
-  for (let i = 1; i < rows.length; i++) {
-    html += `<tr>${rows[i].map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
-  }
-  html += '</tbody></table>';
-  return html;
-}
-
-async function generarGrafico(respuesta, consulta, btnEl) {
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Generando...'; }
-  appendMessage('bot', '<em>Generando gráfico...</em>');
-  try {
-    const res = await fetch(GRAFICO_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ respuesta, consulta })
-    });
-    const raw = await res.text();
-    appendMessage('bot', escapeHtml(raw));
-  } catch (err) {
-    appendMessage('bot', `⚠️ Error al generar gráfico.`);
-    console.error(err);
-  } finally {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '📊 Generar gráfico'; }
-  }
-}
-
+// === ENVÍO DE AUDIO ===
 async function toggleRecording() {
+  const btn = document.getElementById("recordBtn");
   recording = !recording;
-  recordBtn.classList.toggle('recording', recording);
-  recordBtn.innerHTML = recording ? '<i data-lucide="square"></i>' : '<i data-lucide="mic"></i>';
+  btn.classList.toggle("recording");
+  btn.innerHTML = recording ? "<i data-lucide='square'></i>" : "<i data-lucide='mic'></i>";
   lucide.createIcons();
+
   if (recording) startRecording(); else stopRecording();
 }
 
@@ -197,31 +176,71 @@ async function startRecording() {
     audioChunks = [];
     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
     mediaRecorder.onstop = async () => {
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
-      appendMessage('user', '<i>Audio grabado enviado...</i>');
-      const form = new FormData();
-      form.append('type', 'audio');
-      form.append('file', blob, 'voz.webm');
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      appendMessage("user", "<i>Audio grabado enviado...</i>");
+      appendMessage("bot", "<em>Subiendo audio...</em>", true);
+
+      const formData = new FormData();
+      formData.append("type", "audio");
+      formData.append("file", blob, "voz.webm");
+
       try {
-        const { parsed } = await fetchAndParse(WEBHOOK, { method: 'POST', body: form });
-        const data = parsed ?? { respuesta: 'Error', mostrar_boton_grafico: false };
-        appendMessage('bot', renderRespuesta(data.respuesta || 'Error'));
-      } catch {
-        appendMessage('bot', '⚠️ Error al subir audio.');
+        const res = await fetch(webhook, { method: "POST", body: formData });
+        const data = await res.json();
+        removeLoading();
+        appendMessage("bot", data.respuesta);
+        if (data.mostrar_boton_grafico === true) {
+          const btn = document.createElement("button");
+          btn.textContent = "📊 Generar gráfico";
+          btn.className = "grafico-btn";
+          btn.onclick = () => generarGrafico(data.respuesta, "<audio>");
+          messagesDiv.appendChild(btn);
+        }
+      } catch (err) {
+        removeLoading();
+        appendMessage("bot", "⚠️ Error al subir audio.");
+        console.error(err);
       }
     };
     mediaRecorder.start();
-  } catch {
-    appendMessage('bot', '⚠️ No se pudo acceder al micrófono.');
+  } catch (error) {
+    appendMessage("bot", "⚠️ No se pudo acceder al micrófono.");
   }
 }
 
 function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+// === BOTÓN GENERAR GRÁFICO ===
+async function generarGrafico(respuesta, consulta) {
+  appendMessage("bot", "<em>Generando gráfico...</em>");
+  try {
+    const res = await fetch(graficoWebhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ respuesta, consulta })
+    });
+    const data = await res.text();
+    appendMessage("bot", data);
+  } catch (err) {
+    appendMessage("bot", "⚠️ Error al generar gráfico.");
+  }
+}
+
+// === MENSAJES ===
+function appendMessage(sender, html, isLoading=false) {
+  const msg = document.createElement("div");
+  msg.className = "msg " + sender;
+  msg.innerHTML = html;
+  if (isLoading) msg.id = "loading";
+  messagesDiv.appendChild(msg);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function removeLoading() {
+  const loading = document.getElementById("loading");
+  if (loading) loading.remove();
 }
 </script>
 </body>
