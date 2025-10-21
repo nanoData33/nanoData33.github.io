@@ -130,15 +130,13 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
+    const raw = await res.text();
     let data;
-    let raw;
+    
     try {
-      data = await res.json();
-      raw = JSON.stringify(data, null, 2);
+      data = JSON.parse(raw); // si es JSON válido
     } catch {
-      raw = await res.text();
-      try { data = JSON.parse(raw); } 
-      catch { data = { respuesta: raw, mostrar_boton_grafico: false }; }
+      data = { respuesta: raw, mostrar_boton_grafico: false }; // si es texto plano
     }
 
     removeLoading();
