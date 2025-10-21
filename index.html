@@ -64,12 +64,14 @@
   .input-area {
     display: flex; align-items: center; gap: 10px;
   }
+
   input {
     flex: 1; padding: 10px 14px;
     border: 1px solid #ccc;
     border-radius: 10px;
     outline: none;
   }
+
   button {
     background: var(--azul);
     color: white;
@@ -79,10 +81,27 @@
     cursor: pointer;
     transition: background 0.25s;
   }
+
   button:hover { background: var(--violeta); }
   #recordBtn.recording { background: #b71c1c; }
+
+  footer { text-align: center; padding: 10px; background: #fff; font-size: 0.9em; color: #666; }
+
+  /* === NUEVO === */
+  .chart-btn {
+    margin-top: 10px;
+    background: var(--cian);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .chart-btn:hover { background: var(--violeta); }
 </style>
 </head>
+
 <body>
 <header>🎙️ Asistente Clínico Inteligente – Test Audio + Texto</header>
 
@@ -107,9 +126,7 @@ lucide.createIcons();
 
 // === CONFIG ===
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-// --- NUEVO WEBHOOK ---
-const graphWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
-
+const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico"; // === NUEVO ===
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 
@@ -128,18 +145,43 @@ async function sendText() {
     const res = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "text",
-        content: text
-      })
+      body: JSON.stringify({ type: "text", content: text })
     });
 
     const data = await res.text();
     removeLoading();
     appendMessage("bot", `<pre>${data}</pre>`);
+
+    // === NUEVO === botón para generar gráfico
+    addGenerateChartButton();
   } catch (err) {
     removeLoading();
     appendMessage("bot", "⚠️ Error de conexión con el asistente.");
+    console.error(err);
+  }
+}
+
+// === NUEVO === función para agregar botón de gráfico
+function addGenerateChartButton() {
+  const btn = document.createElement("button");
+  btn.textContent = "📊 Generar gráfico";
+  btn.className = "chart-btn";
+  btn.onclick = sendGenerateChartRequest;
+  messagesDiv.appendChild(btn);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// === NUEVO === función que manda la petición al webhook de gráfico
+async function sendGenerateChartRequest() {
+  appendMessage("bot", "<em>Generando gráfico...</em>", true);
+  try {
+    const res = await fetch(webhookGrafico, { method: "POST" });
+    const data = await res.text();
+    removeLoading();
+    appendMessage("bot", `<pre>${data}</pre>`);
+  } catch (err) {
+    removeLoading();
+    appendMessage("bot", "⚠️ Error al generar gráfico.");
     console.error(err);
   }
 }
@@ -175,6 +217,9 @@ async function startRecording() {
         const data = await res.text();
         removeLoading();
         appendMessage("bot", `<pre>${data}</pre>`);
+
+        // === NUEVO === botón de generar gráfico también para audio
+        addGenerateChartButton();
       } catch (err) {
         removeLoading();
         appendMessage("bot", "⚠️ Error al subir audio.");
@@ -191,63 +236,13 @@ function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
 }
 
-// === NUEVA FUNCIÓN PARA GRÁFICO ===
-async function sendGraphRequest(data) {
-  appendMessage("bot", "<em>Generando gráfico...</em>", true);
-
-  try {
-    const res = await fetch(graphWebhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "graph_request",
-        data: data // Envía los datos de la respuesta anterior
-      })
-    });
-
-    const responseData = await res.text(); 
-    removeLoading();
-    // Añade la respuesta (que podría ser un <img> o texto)
-    appendMessage("bot", `Respuesta Gráfico: ${responseData}`);
-  } catch (err) {
-    removeLoading();
-    appendMessage("bot", "⚠️ Error al generar gráfico.");
-    console.error(err);
-  }
-}
-
-// === MENSAJES (MODIFICADA) ===
+// === MENSAJES ===
 function appendMessage(sender, html, isLoading=false) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
   msg.innerHTML = html;
   if (isLoading) msg.id = "loading";
   messagesDiv.appendChild(msg);
-
-  // --- MODIFICACIÓN ---
-  // Si es un mensaje del bot, no está cargando y no es un error, añadir botón
-  if (sender === "bot" && !isLoading && !html.includes("⚠️")) {
-    const graphBtn = document.createElement("button");
-    graphBtn.innerText = "Generar gráfico";
-    
-    // Aplicar estilos para que coincida con la UI
-    graphBtn.style.background = "var(--violeta)";
-    graphBtn.style.color = "white";
-    graphBtn.style.border = "none";
-    graphBtn.style.borderRadius = "10px";
-    graphBtn.style.padding = "10px 14px";
-    graphBtn.style.cursor = "pointer";
-    graphBtn.style.marginTop = "10px";
-    
-    // Extraer datos crudos del tag <pre> para enviarlos
-    const preData = html.replace(/<\/?pre>/g, '');
-    
-    graphBtn.onclick = () => sendGraphRequest(preData);
-    
-    msg.appendChild(graphBtn);
-  }
-  // --- FIN DE MODIFICACIÓN ---
-
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
@@ -255,6 +250,10 @@ function removeLoading() {
   const loading = document.getElementById("loading");
   if (loading) loading.remove();
 }
+</script>
+</body>
+</html>
+
 </script>
 </body>
 </html>
