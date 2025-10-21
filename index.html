@@ -54,7 +54,7 @@
   }
   .msg { margin-bottom: 10px; padding: 10px 14px; border-radius: 10px; }
   .msg.user { background: var(--cian); color: white; text-align: right; }
-  .msg.bot { background: #ebedff; color: #222; position: relative; }
+  .msg.bot { background: #ebedff; color: #222; position: relative; white-space: pre-wrap; }
   .input-area { display: flex; align-items: center; gap: 10px; }
   input {
     flex: 1; padding: 10px 14px;
@@ -130,21 +130,21 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
+    // Leer la respuesta solo una vez
     const raw = await res.text();
     let data;
-    
     try {
-      data = JSON.parse(raw); // si es JSON válido
+      data = JSON.parse(raw);
     } catch {
-      data = { respuesta: raw, mostrar_boton_grafico: false }; // si es texto plano
+      data = { respuesta: raw, mostrar_boton_grafico: false };
     }
 
     removeLoading();
 
-    // Mostrar en chat la respuesta literal recibida
+    // Mostrar exactamente lo que se recibió (texto crudo)
     appendMessage("bot", `<pre>${raw}</pre>`);
 
-    // Si la respuesta tiene contenido y debe mostrar botón
+    // Mostrar la respuesta si existe
     if (data.respuesta) {
       const botMsg = appendMessage("bot", `<pre>${data.respuesta}</pre>`);
       if (data.mostrar_boton_grafico === true || data.mostrar_boton_grafico === "true") {
@@ -203,6 +203,7 @@ async function startRecording() {
     appendMessage("bot", "⚠️ No se pudo acceder al micrófono.");
   }
 }
+
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
 }
