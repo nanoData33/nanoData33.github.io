@@ -54,7 +54,7 @@
   }
   .msg { margin-bottom: 10px; padding: 10px 14px; border-radius: 10px; }
   .msg.user { background: var(--cian); color: white; text-align: right; }
-  .msg.bot { background: #ebedff; color: #222; position: relative; white-space: pre-wrap; }
+  .msg.bot { background: #ebedff; color: #222; position: relative; }
   .input-area { display: flex; align-items: center; gap: 10px; }
   input {
     flex: 1; padding: 10px 14px;
@@ -110,7 +110,6 @@ const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const graficoWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
-
 let lastUserMessage = "";
 let recording = false;
 let mediaRecorder, audioChunks = [];
@@ -132,16 +131,24 @@ async function sendText() {
     });
 
     let data;
+    let raw;
     try {
-      data = await res.json(); // si viene JSON real
+      data = await res.json();
+      raw = JSON.stringify(data, null, 2);
     } catch {
-      const textResp = await res.text(); // si viene texto plano
-      data = JSON.parse(textResp); // intenta parsearlo como JSON
+      raw = await res.text();
+      try { data = JSON.parse(raw); } 
+      catch { data = { respuesta: raw, mostrar_boton_grafico: false }; }
     }
 
     removeLoading();
+
+    // Mostrar en chat la respuesta literal recibida
+    appendMessage("bot", `<pre>${raw}</pre>`);
+
+    // Si la respuesta tiene contenido y debe mostrar botón
     if (data.respuesta) {
-      const botMsg = appendMessage("bot", data.respuesta);
+      const botMsg = appendMessage("bot", `<pre>${data.respuesta}</pre>`);
       if (data.mostrar_boton_grafico === true || data.mostrar_boton_grafico === "true") {
         const btn = document.createElement("button");
         btn.textContent = "📊 Generar gráfico";
@@ -149,12 +156,10 @@ async function sendText() {
         btn.onclick = () => generarGrafico(data.respuesta, lastUserMessage);
         botMsg.appendChild(btn);
       }
-    } else {
-      appendMessage("bot", `<pre>${JSON.stringify(data, null, 2)}</pre>`);
     }
   } catch (err) {
     removeLoading();
-    appendMessage("bot", "⚠️ Error de conexión con el asistente.");
+    appendMessage("bot", `⚠️ Error de conexión con el asistente.\n<pre>${err}</pre>`);
     console.error(err);
   }
 }
@@ -186,9 +191,9 @@ async function startRecording() {
 
       try {
         const res = await fetch(webhook, { method: "POST", body: formData });
-        const textResp = await res.text();
+        const data = await res.text();
         removeLoading();
-        appendMessage("bot", `<pre>${textResp}</pre>`);
+        appendMessage("bot", `<pre>${data}</pre>`);
       } catch (err) {
         removeLoading();
         appendMessage("bot", "⚠️ Error al subir audio.");
@@ -200,7 +205,6 @@ async function startRecording() {
     appendMessage("bot", "⚠️ No se pudo acceder al micrófono.");
   }
 }
-
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
 }
@@ -234,7 +238,6 @@ function appendMessage(sender, html, isLoading=false) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
   return msg;
 }
-
 function removeLoading() {
   const loading = document.getElementById("loading");
   if (loading) loading.remove();
