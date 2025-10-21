@@ -17,7 +17,6 @@
     --texto: #1E1E2F;
     --sombra: rgba(0,0,0,0.08);
   }
-
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -27,7 +26,6 @@
     flex-direction: column;
     height: 100vh;
   }
-
   header {
     background: var(--azul);
     color: white;
@@ -35,7 +33,6 @@
     font-weight: 600;
     text-align: center;
   }
-
   main { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
   .chat-box {
     width: 90%;
@@ -45,7 +42,6 @@
     box-shadow: 0 4px 10px var(--sombra);
     padding: 20px;
   }
-
   h2 { color: var(--azul); margin-bottom: 10px; text-align: center; }
   .messages {
     height: 300px;
@@ -56,12 +52,12 @@
     margin-bottom: 10px;
     box-shadow: inset 0 0 4px var(--sombra);
   }
-
   .msg { margin-bottom: 10px; padding: 10px 14px; border-radius: 10px; }
   .msg.user { background: var(--cian); color: white; text-align: right; }
-  .msg.bot { background: #ebedff; color: #222; }
-
-  .input-area { display: flex; align-items: center; gap: 10px; }
+  .msg.bot { background: #ebedff; color: #222; position: relative; }
+  .input-area {
+    display: flex; align-items: center; gap: 10px;
+  }
   input {
     flex: 1; padding: 10px 14px;
     border: 1px solid #ccc;
@@ -79,7 +75,13 @@
   }
   button:hover { background: var(--violeta); }
   #recordBtn.recording { background: #b71c1c; }
-
+  .grafico-btn {
+    margin-top: 8px;
+    background: var(--violeta);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.9em;
+  }
   footer { text-align: center; padding: 10px; background: #fff; font-size: 0.9em; color: #666; }
 </style>
 </head>
@@ -106,11 +108,12 @@
 <script>
 lucide.createIcons();
 
-// === CONFIG ===
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+const graficoWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 
+let lastUserMessage = "";
 let recording = false;
 let mediaRecorder, audioChunks = [];
 
@@ -118,6 +121,7 @@ let mediaRecorder, audioChunks = [];
 async function sendText() {
   const text = input.value.trim();
   if (!text) return;
+  lastUserMessage = text;
   appendMessage("user", text);
   input.value = "";
   appendMessage("bot", "<em>Procesando texto...</em>", true);
@@ -126,15 +130,24 @@ async function sendText() {
     const res = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "text",
-        content: text
-      })
+      body: JSON.stringify({ type: "text", content: text })
     });
 
-    const data = await res.text();
+    const data = await res.json();
     removeLoading();
-    appendMessage("bot", `<pre>${data}</pre>`);
+
+    if (data.respuesta) {
+      const botMsg = appendMessage("bot", `<pre>${data.respuesta}</pre>`);
+      if (data.mostrar_boton_grafico === true || data.mostrar_boton_grafico === "true") {
+        const btn = document.createElement("button");
+        btn.textContent = "📊 Generar gráfico";
+        btn.className = "grafico-btn";
+        btn.onclick = () => generarGrafico(data.respuesta, lastUserMessage);
+        botMsg.appendChild(btn);
+      }
+    } else {
+      appendMessage("bot", `<pre>${JSON.stringify(data, null, 2)}</pre>`);
+    }
   } catch (err) {
     removeLoading();
     appendMessage("bot", "⚠️ Error de conexión con el asistente.");
@@ -142,14 +155,13 @@ async function sendText() {
   }
 }
 
-// === GRABACIÓN DE AUDIO ===
+// === ENVÍO DE AUDIO ===
 async function toggleRecording() {
   const btn = document.getElementById("recordBtn");
   recording = !recording;
   btn.classList.toggle("recording");
   btn.innerHTML = recording ? "<i data-lucide='square'></i>" : "<i data-lucide='mic'></i>";
   lucide.createIcons();
-
   if (recording) startRecording(); else stopRecording();
 }
 
@@ -170,9 +182,9 @@ async function startRecording() {
 
       try {
         const res = await fetch(webhook, { method: "POST", body: formData });
-        const data = await res.text();
+        const data = await res.json();
         removeLoading();
-        appendMessage("bot", `<pre>${data}</pre>`);
+        appendMessage("bot", `<pre>${JSON.stringify(data, null, 2)}</pre>`);
       } catch (err) {
         removeLoading();
         appendMessage("bot", "⚠️ Error al subir audio.");
@@ -184,9 +196,27 @@ async function startRecording() {
     appendMessage("bot", "⚠️ No se pudo acceder al micrófono.");
   }
 }
-
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+}
+
+// === GENERAR GRÁFICO ===
+async function generarGrafico(respuesta, consulta) {
+  appendMessage("bot", "<em>Generando gráfico...</em>", true);
+  try {
+    const res = await fetch(graficoWebhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ respuesta, consulta })
+    });
+    const data = await res.text();
+    removeLoading();
+    appendMessage("bot", `<pre>${data}</pre>`);
+  } catch (err) {
+    removeLoading();
+    appendMessage("bot", "⚠️ Error al generar gráfico.");
+    console.error(err);
+  }
 }
 
 // === MENSAJES ===
@@ -197,8 +227,8 @@ function appendMessage(sender, html, isLoading=false) {
   if (isLoading) msg.id = "loading";
   messagesDiv.appendChild(msg);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  return msg;
 }
-
 function removeLoading() {
   const loading = document.getElementById("loading");
   if (loading) loading.remove();
