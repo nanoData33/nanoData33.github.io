@@ -81,8 +81,6 @@
   }
   button:hover { background: var(--violeta); }
   #recordBtn.recording { background: #b71c1c; }
-
-  footer { text-align: center; padding: 10px; background: #fff; font-size: 0.9em; color: #666; }
 </style>
 </head>
 <body>
@@ -109,6 +107,9 @@ lucide.createIcons();
 
 // === CONFIG ===
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+// --- NUEVO WEBHOOK ---
+const graphWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
+
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 
@@ -190,13 +191,63 @@ function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
 }
 
-// === MENSAJES ===
+// === NUEVA FUNCIÓN PARA GRÁFICO ===
+async function sendGraphRequest(data) {
+  appendMessage("bot", "<em>Generando gráfico...</em>", true);
+
+  try {
+    const res = await fetch(graphWebhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "graph_request",
+        data: data // Envía los datos de la respuesta anterior
+      })
+    });
+
+    const responseData = await res.text(); 
+    removeLoading();
+    // Añade la respuesta (que podría ser un <img> o texto)
+    appendMessage("bot", `Respuesta Gráfico: ${responseData}`);
+  } catch (err) {
+    removeLoading();
+    appendMessage("bot", "⚠️ Error al generar gráfico.");
+    console.error(err);
+  }
+}
+
+// === MENSAJES (MODIFICADA) ===
 function appendMessage(sender, html, isLoading=false) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
   msg.innerHTML = html;
   if (isLoading) msg.id = "loading";
   messagesDiv.appendChild(msg);
+
+  // --- MODIFICACIÓN ---
+  // Si es un mensaje del bot, no está cargando y no es un error, añadir botón
+  if (sender === "bot" && !isLoading && !html.includes("⚠️")) {
+    const graphBtn = document.createElement("button");
+    graphBtn.innerText = "Generar gráfico";
+    
+    // Aplicar estilos para que coincida con la UI
+    graphBtn.style.background = "var(--violeta)";
+    graphBtn.style.color = "white";
+    graphBtn.style.border = "none";
+    graphBtn.style.borderRadius = "10px";
+    graphBtn.style.padding = "10px 14px";
+    graphBtn.style.cursor = "pointer";
+    graphBtn.style.marginTop = "10px";
+    
+    // Extraer datos crudos del tag <pre> para enviarlos
+    const preData = html.replace(/<\/?pre>/g, '');
+    
+    graphBtn.onclick = () => sendGraphRequest(preData);
+    
+    msg.appendChild(graphBtn);
+  }
+  // --- FIN DE MODIFICACIÓN ---
+
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
