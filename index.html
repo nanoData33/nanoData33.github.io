@@ -25,7 +25,7 @@
   button{background:var(--azul);color:#fff;border:0;padding:10px 12px;border-radius:10px;cursor:pointer}
   button:hover{background:var(--violeta)}
   #recordBtn.recording{background:#b71c1c}
-  .grafico-btn{background:var(--violeta);margin-left:8px;padding:6px 10px;border-radius:8px;border:none;color:#fff;cursor:pointer}
+  .grafico-btn{background:var(--violeta);margin-top:8px;padding:8px 12px;border-radius:8px;border:none;color:#fff;cursor:pointer}
   table.md-table{border-collapse:collapse;width:100%;margin-top:8px}
   table.md-table th, table.md-table td{border:1px solid #ddd;padding:6px 8px;text-align:left}
   .meta-pre{background:#fff;border-radius:6px;padding:6px;margin:6px 0;font-size:0.9em;color:#333;white-space:pre-wrap}
@@ -70,7 +70,6 @@ sendBtn.addEventListener('click', () => sendText());
 input.addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
 recordBtn.addEventListener('click', toggleRecording);
 
-// append message helper
 function appendMessage(kind, html) {
   const d = document.createElement('div');
   d.className = 'msg ' + (kind === 'user' ? 'user' : 'bot');
@@ -80,10 +79,9 @@ function appendMessage(kind, html) {
   return d;
 }
 
-// safe fetch + single read and robust parse
 async function fetchAndParse(url, options) {
   const res = await fetch(url, options);
-  const raw = await res.text(); // read once
+  const raw = await res.text();
   let parsed = null;
   try {
     parsed = JSON.parse(raw);
@@ -93,176 +91,98 @@ async function fetchAndParse(url, options) {
   return { raw, parsed };
 }
 
-// main send text
 async function sendText() {
   const text = input.value.trim();
   if (!text) return;
   lastUserMessage = text;
   appendMessage('user', escapeHtml(text));
   input.value = '';
-  const loading = appendMessage('bot', '<em>Procesando texto...</em>');
+  const loading = appendMessage('bot', '<em>Procesando...</em>');
 
   try {
-    const { raw, parsed } = await fetchAndParse(WEBHOOK, {
+    const { parsed } = await fetchAndParse(WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'text', content: text })
     });
 
-    // remove loading
     loading.remove();
+    const data = parsed ?? { respuesta: 'Error: formato inválido', mostrar_boton_grafico: false };
 
-    // show raw response (exactamente lo que llega)
-    appendMessage('bot', `<div class="meta-pre">Respuesta cruda recibida:\n${escapeHtml(raw)}</div>`);
-
-    // determine final data object
-    const data = parsed ?? { respuesta: raw, mostrar_boton_grafico: false };
-
-    // Show parsed 'respuesta' clearly and render table if present
+    // Mostrar solo el texto de respuesta
     if (data.respuesta) {
-      // create container
-      const container = document.createElement('div');
-      container.className = 'msg bot';
-      // add textual respuesta
-      const respuestaHtml = renderRespuesta(data.respuesta);
-      container.appendChild(respuestaHtml);
+      const msgDiv = appendMessage('bot', renderRespuesta(data.respuesta));
 
-      // if button flag true, append "Generar gráfico"
       if (data.mostrar_boton_grafico === true || data.mostrar_boton_grafico === 'true') {
         const btn = document.createElement('button');
         btn.className = 'grafico-btn';
         btn.textContent = '📊 Generar gráfico';
         btn.onclick = () => generarGrafico(data.respuesta, lastUserMessage, btn);
-        container.appendChild(btn);
+        msgDiv.appendChild(btn);
       }
-
-      messagesDiv.appendChild(container);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     } else {
-      // fallback: show raw as pre
-      appendMessage('bot', `<pre>${escapeHtml(raw)}</pre>`);
+      appendMessage('bot', '<em>No se recibió respuesta válida.</em>');
     }
 
   } catch (err) {
     loading.remove();
-    appendMessage('bot', `⚠️ Error de conexión con el asistente.\n<pre>${escapeHtml(String(err))}</pre>`);
+    appendMessage('bot', `⚠️ Error de conexión con el asistente.`);
     console.error(err);
   }
 }
 
-// Render respuesta: if contains a Markdown table, convert to HTML table + intro text
+// Renderizar texto y tablas Markdown
 function renderRespuesta(text) {
-  // container
-  const wrapper = document.createElement('div');
-
-  // try to find table start: first line that starts with '|'
+  // Buscar tabla markdown
   const lines = text.split(/\r?\n/);
-  let tableStartIndex = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^\s*\|/.test(lines[i])) { tableStartIndex = i; break; }
-  }
+  let tableStart = lines.findIndex(l => /^\s*\|/.test(l));
+  if (tableStart === -1) return escapeHtml(text);
 
-  if (tableStartIndex === -1) {
-    // no table -> plain pre block
-    const pre = document.createElement('div');
-    pre.className = 'meta-pre';
-    pre.textContent = text;
-    wrapper.appendChild(pre);
-    return wrapper;
-  }
+  const intro = lines.slice(0, tableStart).join('\n').trim();
+  const tableLines = lines.slice(tableStart).filter(l => /^\s*\|/.test(l));
 
-  // intro is everything before the tableStartIndex
-  const intro = lines.slice(0, tableStartIndex).join('\n').trim();
-  if (intro.length) {
-    const p = document.createElement('div');
-    p.className = 'meta-pre';
-    p.textContent = intro;
-    wrapper.appendChild(p);
-  }
-
-  // collect table lines (from tableStartIndex until non-table line or end)
-  const tableLines = [];
-  for (let i = tableStartIndex; i < lines.length; i++) {
-    if (/^\s*\|/.test(lines[i])) tableLines.push(lines[i].trim());
-    else break;
-  }
-
-  // sanitize and parse table lines into rows of cells
-  // remove leading/trailing '|' and split on '|'
   const rows = tableLines.map(r => {
-    let inner = r;
-    if (inner.startsWith('|')) inner = inner.slice(1);
-    if (inner.endsWith('|')) inner = inner.slice(0, -1);
-    return inner.split('|').map(c => c.trim());
+    let clean = r.trim();
+    if (clean.startsWith('|')) clean = clean.slice(1);
+    if (clean.endsWith('|')) clean = clean.slice(0, -1);
+    return clean.split('|').map(c => c.trim());
   });
 
-  if (rows.length === 0) {
-    const pre = document.createElement('div');
-    pre.className = 'meta-pre';
-    pre.textContent = text;
-    wrapper.appendChild(pre);
-    return wrapper;
-  }
+  if (rows.length < 2) return escapeHtml(text);
 
-  // remove separator row like --- if present (usually second row)
-  let header = rows[0];
-  if (rows.length > 1 && rows[1].every(cell => /^:?-+:?$/.test(cell) || /^-+$/.test(cell))) {
-    // drop rows[1]
-    rows.splice(1,1);
-  }
+  const header = rows[0];
+  if (rows[1].every(c => /^-+$/.test(c))) rows.splice(1, 1);
 
-  // Build HTML table
-  const table = document.createElement('table');
-  table.className = 'md-table';
-  const thead = document.createElement('thead');
-  const thr = document.createElement('tr');
-  for (const h of header) {
-    const th = document.createElement('th');
-    th.textContent = h;
-    thr.appendChild(th);
+  let html = '';
+  if (intro) html += `<div class="meta-pre">${escapeHtml(intro)}</div>`;
+  html += `<table class="md-table"><thead><tr>${header.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>`;
+  for (let i = 1; i < rows.length; i++) {
+    html += `<tr>${rows[i].map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
   }
-  thead.appendChild(thr);
-  table.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  for (let r = 1; r < rows.length; r++) {
-    const tr = document.createElement('tr');
-    const row = rows[r];
-    for (let c = 0; c < header.length; c++) {
-      const td = document.createElement('td');
-      td.textContent = row[c] ?? '';
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  table.appendChild(tbody);
-  wrapper.appendChild(table);
-  return wrapper;
+  html += '</tbody></table>';
+  return html;
 }
 
-// generar grafico: posts respuesta+consulta to grafico webhook, disables button while waiting
 async function generarGrafico(respuesta, consulta, btnEl) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Generando...'; }
   appendMessage('bot', '<em>Generando gráfico...</em>');
   try {
     const res = await fetch(GRAFICO_WEBHOOK, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ respuesta, consulta })
     });
     const raw = await res.text();
-    // show raw response
-    appendMessage('bot', `<pre>${escapeHtml(raw)}</pre>`);
+    appendMessage('bot', escapeHtml(raw));
   } catch (err) {
-    appendMessage('bot', `⚠️ Error al generar gráfico.\n<pre>${escapeHtml(String(err))}</pre>`);
+    appendMessage('bot', `⚠️ Error al generar gráfico.`);
     console.error(err);
   } finally {
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = '📊 Generar gráfico'; }
   }
 }
 
-// --- AUDIO RECORDING ---
-async function toggleRecording(){
+async function toggleRecording() {
   recording = !recording;
   recordBtn.classList.toggle('recording', recording);
   recordBtn.innerHTML = recording ? '<i data-lucide="square"></i>' : '<i data-lucide="mic"></i>';
@@ -270,59 +190,39 @@ async function toggleRecording(){
   if (recording) startRecording(); else stopRecording();
 }
 
-async function startRecording(){
+async function startRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
     mediaRecorder.onstop = async () => {
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
       appendMessage('user', '<i>Audio grabado enviado...</i>');
-      appendMessage('bot', '<em>Subiendo audio...</em>');
       const form = new FormData();
-      form.append('type','audio');
+      form.append('type', 'audio');
       form.append('file', blob, 'voz.webm');
       try {
-        const { raw, parsed } = await (async () => {
-          const r = await fetch(WEBHOOK, { method: 'POST', body: form });
-          const txt = await r.text();
-          let p=null;
-          try { p = JSON.parse(txt); } catch(e){ p=null; }
-          return { raw: txt, parsed: p };
-        })();
-        appendMessage('bot', `<div class="meta-pre">Respuesta cruda recibida:\n${escapeHtml(raw)}</div>`);
-        const data = parsed ?? { respuesta: raw, mostrar_boton_grafico: false };
-        if (data.respuesta) {
-          const container = renderRespuesta(data.respuesta);
-          messagesDiv.appendChild(container);
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-          if (data.mostrar_boton_grafico) {
-            const btn = document.createElement('button');
-            btn.className = 'grafico-btn';
-            btn.textContent = '📊 Generar gráfico';
-            btn.onclick = () => generarGrafico(data.respuesta, lastUserMessage, btn);
-            messagesDiv.appendChild(btn);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-          }
-        }
-      } catch (err) {
-        appendMessage('bot', `⚠️ Error al subir audio.\n<pre>${escapeHtml(String(err))}</pre>`);
+        const { parsed } = await fetchAndParse(WEBHOOK, { method: 'POST', body: form });
+        const data = parsed ?? { respuesta: 'Error', mostrar_boton_grafico: false };
+        appendMessage('bot', renderRespuesta(data.respuesta || 'Error'));
+      } catch {
+        appendMessage('bot', '⚠️ Error al subir audio.');
       }
     };
     mediaRecorder.start();
-  } catch (e) {
+  } catch {
     appendMessage('bot', '⚠️ No se pudo acceder al micrófono.');
   }
 }
 
-function stopRecording(){
+function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
 }
 
-// small helpers
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
 </script>
 </body>
 </html>
