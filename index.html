@@ -123,16 +123,18 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
-    const data = await res.json(); // ✅ n8n ya envía JSON válido
+    const data = await res.json(); // ✅ ya es JSON válido (por JSON.stringify en n8n)
     removeLoading();
 
     appendMessage("bot", data.respuesta);
 
+    // Mostrar botón de gráfico si aplica
     if (data.mostrar_boton_grafico) {
       const boton = document.createElement("button");
       boton.textContent = "📊 Generar gráfico";
       boton.onclick = () => generarGrafico(data.respuesta, text);
       messagesDiv.appendChild(boton);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
   } catch (err) {
