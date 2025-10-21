@@ -136,13 +136,18 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
-    const data = await res.json();
-    removeLoading();
+    // ✅ FIX: evitar error de JSON malformado
+    const raw = await res.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = { respuesta: raw, mostrar_boton_grafico: false };
+    }
 
-    // Muestra solo el contenido de "respuesta"
+    removeLoading();
     appendMessage("bot", data.respuesta);
 
-    // Si hay que mostrar botón de gráfico
     if (data.mostrar_boton_grafico === true) {
       const btn = document.createElement("button");
       btn.textContent = "📊 Generar gráfico";
@@ -186,9 +191,19 @@ async function startRecording() {
 
       try {
         const res = await fetch(webhook, { method: "POST", body: formData });
-        const data = await res.json();
+
+        // ✅ FIX: tolerar JSON malformado
+        const raw = await res.text();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = { respuesta: raw, mostrar_boton_grafico: false };
+        }
+
         removeLoading();
         appendMessage("bot", data.respuesta);
+
         if (data.mostrar_boton_grafico === true) {
           const btn = document.createElement("button");
           btn.textContent = "📊 Generar gráfico";
