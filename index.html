@@ -61,17 +61,13 @@
   .msg.user { background: var(--cian); color: white; text-align: right; }
   .msg.bot { background: #ebedff; color: #222; }
 
-  .input-area {
-    display: flex; align-items: center; gap: 10px;
-  }
-
+  .input-area { display: flex; align-items: center; gap: 10px; }
   input {
     flex: 1; padding: 10px 14px;
     border: 1px solid #ccc;
     border-radius: 10px;
     outline: none;
   }
-
   button {
     background: var(--azul);
     color: white;
@@ -81,23 +77,10 @@
     cursor: pointer;
     transition: background 0.25s;
   }
-
   button:hover { background: var(--violeta); }
   #recordBtn.recording { background: #b71c1c; }
 
   footer { text-align: center; padding: 10px; background: #fff; font-size: 0.9em; color: #666; }
-
-  .chart-btn {
-    margin-top: 10px;
-    background: var(--cian);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-  .chart-btn:hover { background: var(--violeta); }
 </style>
 </head>
 
@@ -125,22 +108,16 @@ lucide.createIcons();
 
 // === CONFIG ===
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
-
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 
 let recording = false;
 let mediaRecorder, audioChunks = [];
-let lastQuery = "";    // 🧠 guarda la última consulta del usuario
-let lastOutput = "";   // 📄 guarda el output completo del asistente
 
 // === ENVÍO DE TEXTO ===
 async function sendText() {
   const text = input.value.trim();
   if (!text) return;
-
-  lastQuery = text; // 🔹 almacena la consulta
   appendMessage("user", text);
   input.value = "";
   appendMessage("bot", "<em>Procesando texto...</em>", true);
@@ -149,15 +126,15 @@ async function sendText() {
     const res = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "text", content: text })
+      body: JSON.stringify({
+        type: "text",
+        content: text
+      })
     });
 
     const data = await res.text();
     removeLoading();
-    lastOutput = data; // 🔹 almacena el resultado del primer webhook
-
     appendMessage("bot", `<pre>${data}</pre>`);
-    addGenerateChartButton();
   } catch (err) {
     removeLoading();
     appendMessage("bot", "⚠️ Error de conexión con el asistente.");
@@ -165,42 +142,7 @@ async function sendText() {
   }
 }
 
-// === FUNCIÓN: Añadir botón para generar gráfico ===
-function addGenerateChartButton() {
-  const btn = document.createElement("button");
-  btn.textContent = "📊 Generar gráfico";
-  btn.className = "chart-btn";
-  btn.onclick = sendGenerateChartRequest;
-  messagesDiv.appendChild(btn);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-// === FUNCIÓN: Mandar petición con ambos datos al webhook de gráficos ===
-async function sendGenerateChartRequest() {
-  appendMessage("bot", "<em>Generando gráfico...</em>", true);
-  try {
-    const payload = {
-      consulta: lastQuery,
-      resultado: lastOutput
-    };
-
-    const res = await fetch(webhookGrafico, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.text();
-    removeLoading();
-    appendMessage("bot", `<pre>${data}</pre>`);
-  } catch (err) {
-    removeLoading();
-    appendMessage("bot", "⚠️ Error al generar gráfico.");
-    console.error(err);
-  }
-}
-
-// === AUDIO ===
+// === GRABACIÓN DE AUDIO ===
 async function toggleRecording() {
   const btn = document.getElementById("recordBtn");
   recording = !recording;
@@ -230,9 +172,7 @@ async function startRecording() {
         const res = await fetch(webhook, { method: "POST", body: formData });
         const data = await res.text();
         removeLoading();
-        lastOutput = data; // 🔹 guarda el resultado del audio
         appendMessage("bot", `<pre>${data}</pre>`);
-        addGenerateChartButton();
       } catch (err) {
         removeLoading();
         appendMessage("bot", "⚠️ Error al subir audio.");
