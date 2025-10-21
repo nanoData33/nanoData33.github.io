@@ -54,10 +54,8 @@
   }
   .msg { margin-bottom: 10px; padding: 10px 14px; border-radius: 10px; }
   .msg.user { background: var(--cian); color: white; text-align: right; }
-  .msg.bot { background: #ebedff; color: #222; position: relative; }
-  .input-area {
-    display: flex; align-items: center; gap: 10px;
-  }
+  .msg.bot { background: #ebedff; color: #222; position: relative; white-space: pre-wrap; }
+  .input-area { display: flex; align-items: center; gap: 10px; }
   input {
     flex: 1; padding: 10px 14px;
     border: 1px solid #ccc;
@@ -133,11 +131,17 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
-    const data = await res.json();
-    removeLoading();
+    let data;
+    try {
+      data = await res.json(); // si viene JSON real
+    } catch {
+      const textResp = await res.text(); // si viene texto plano
+      data = JSON.parse(textResp); // intenta parsearlo como JSON
+    }
 
+    removeLoading();
     if (data.respuesta) {
-      const botMsg = appendMessage("bot", `<pre>${data.respuesta}</pre>`);
+      const botMsg = appendMessage("bot", data.respuesta);
       if (data.mostrar_boton_grafico === true || data.mostrar_boton_grafico === "true") {
         const btn = document.createElement("button");
         btn.textContent = "📊 Generar gráfico";
@@ -155,7 +159,7 @@ async function sendText() {
   }
 }
 
-// === ENVÍO DE AUDIO ===
+// === GRABACIÓN DE AUDIO ===
 async function toggleRecording() {
   const btn = document.getElementById("recordBtn");
   recording = !recording;
@@ -182,9 +186,9 @@ async function startRecording() {
 
       try {
         const res = await fetch(webhook, { method: "POST", body: formData });
-        const data = await res.json();
+        const textResp = await res.text();
         removeLoading();
-        appendMessage("bot", `<pre>${JSON.stringify(data, null, 2)}</pre>`);
+        appendMessage("bot", `<pre>${textResp}</pre>`);
       } catch (err) {
         removeLoading();
         appendMessage("bot", "⚠️ Error al subir audio.");
@@ -196,6 +200,7 @@ async function startRecording() {
     appendMessage("bot", "⚠️ No se pudo acceder al micrófono.");
   }
 }
+
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
 }
@@ -229,6 +234,7 @@ function appendMessage(sender, html, isLoading=false) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
   return msg;
 }
+
 function removeLoading() {
   const loading = document.getElementById("loading");
   if (loading) loading.remove();
