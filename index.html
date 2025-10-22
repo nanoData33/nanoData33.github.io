@@ -100,7 +100,7 @@ lucide.createIcons();
 
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
-const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset"; // 👈 Nuevo webhook
+const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
 
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
@@ -127,9 +127,10 @@ async function sendText() {
     const data = await res.json(); 
     removeLoading();
 
+    // Muestra el contenido natural y tabla generada (sin tocar esa parte)
     appendMessage("bot", data.respuesta);
 
-    // 📊 Mostrar botón de gráfico si aplica
+    // 📊 Botón de gráfico
     if (data.mostrar_boton_grafico) {
       const botonGrafico = document.createElement("button");
       botonGrafico.textContent = "📊 Generar gráfico";
@@ -137,11 +138,11 @@ async function sendText() {
       messagesDiv.appendChild(botonGrafico);
     }
 
-    // 📋 Mostrar botón de dataset si tiene consulta SQL
+    // 📋 Botón de dataset completo
     if (data.consulta) {
       const botonDataset = document.createElement("button");
       botonDataset.textContent = "📋 Ver dataset completo";
-      botonDataset.onclick = () => abrirDataset(data.consulta);
+      botonDataset.onclick = () => abrirDataset(data.consulta, data.total_items);
       messagesDiv.appendChild(botonDataset);
     }
 
@@ -172,8 +173,8 @@ async function generarGrafico(respuesta, consulta) {
   }
 }
 
-// === 🧩 NUEVO: abrir dataset completo en pestaña nueva ===
-function abrirDataset(consultaSQL) {
+// === 🧩 Abrir dataset completo en pestaña nueva ===
+function abrirDataset(consultaSQL, totalItems) {
   const form = document.createElement("form");
   form.method = "POST";
   form.action = webhookDataset;
@@ -184,7 +185,13 @@ function abrirDataset(consultaSQL) {
   inputConsulta.name = "consulta";
   inputConsulta.value = consultaSQL;
 
+  const inputTotal = document.createElement("input");
+  inputTotal.type = "hidden";
+  inputTotal.name = "total_items";
+  inputTotal.value = totalItems;
+
   form.appendChild(inputConsulta);
+  form.appendChild(inputTotal);
   document.body.appendChild(form);
   form.submit();
   form.remove();
