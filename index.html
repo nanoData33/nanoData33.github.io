@@ -100,6 +100,7 @@ lucide.createIcons();
 
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/generargrafico";
+const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset"; // 👈 Nuevo webhook
 
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
@@ -123,19 +124,28 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
-    const data = await res.json(); // ✅ ya es JSON válido (por JSON.stringify en n8n)
+    const data = await res.json(); 
     removeLoading();
 
     appendMessage("bot", data.respuesta);
 
-    // Mostrar botón de gráfico si aplica
+    // 📊 Mostrar botón de gráfico si aplica
     if (data.mostrar_boton_grafico) {
-      const boton = document.createElement("button");
-      boton.textContent = "📊 Generar gráfico";
-      boton.onclick = () => generarGrafico(data.respuesta, text);
-      messagesDiv.appendChild(boton);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      const botonGrafico = document.createElement("button");
+      botonGrafico.textContent = "📊 Generar gráfico";
+      botonGrafico.onclick = () => generarGrafico(data.respuesta, text);
+      messagesDiv.appendChild(botonGrafico);
     }
+
+    // 📋 Mostrar botón de dataset si tiene consulta SQL
+    if (data.consulta) {
+      const botonDataset = document.createElement("button");
+      botonDataset.textContent = "📋 Ver dataset completo";
+      botonDataset.onclick = () => abrirDataset(data.consulta);
+      messagesDiv.appendChild(botonDataset);
+    }
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
   } catch (err) {
     removeLoading();
@@ -153,7 +163,6 @@ async function generarGrafico(respuesta, consulta) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ respuesta, consulta })
     });
-
     const data = await res.text();
     removeLoading();
     appendMessage("bot", `<pre>${data}</pre>`);
@@ -161,6 +170,24 @@ async function generarGrafico(respuesta, consulta) {
     removeLoading();
     appendMessage("bot", "⚠️ Error al generar el gráfico.");
   }
+}
+
+// === 🧩 NUEVO: abrir dataset completo en pestaña nueva ===
+function abrirDataset(consultaSQL) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = webhookDataset;
+  form.target = "_blank"; // 👈 abre en nueva pestaña
+
+  const inputConsulta = document.createElement("input");
+  inputConsulta.type = "hidden";
+  inputConsulta.name = "consulta";
+  inputConsulta.value = consultaSQL;
+
+  form.appendChild(inputConsulta);
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
 }
 
 // === AUDIO ===
