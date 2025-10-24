@@ -191,7 +191,7 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
 
-    const data = await res.json(); 
+    const data = await res.json();
     removeLoading();
     appendMessage("bot", data.respuesta);
 
@@ -220,7 +220,7 @@ async function sendText() {
   }
 }
 
-// === GRÁFICO ===
+// === GRÁFICO (abre en nueva pestaña) ===
 async function generarGrafico(respuesta, consulta) {
   appendMessage("bot", "<em>Generando gráfico...</em>", true);
   try {
@@ -229,9 +229,16 @@ async function generarGrafico(respuesta, consulta) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ respuesta, consulta })
     });
-    const data = await res.text();
+    const htmlContent = await res.text();
     removeLoading();
-    appendMessage("bot", `<pre>${data}</pre>`);
+
+    // 🧩 Abre una nueva pestaña con el HTML generado por el modelo
+    const newWindow = window.open("", "_blank");
+    newWindow.document.open();
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+
+    appendMessage("bot", "✅ Gráfico generado correctamente (abierto en nueva pestaña).");
   } catch {
     removeLoading();
     appendMessage("bot", "⚠️ Error al generar el gráfico.");
